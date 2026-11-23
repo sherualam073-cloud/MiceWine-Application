@@ -2,3 +2,6 @@
 .androidide
 .idea
 local.properties
+.gradle/
+build/
+local.properties
