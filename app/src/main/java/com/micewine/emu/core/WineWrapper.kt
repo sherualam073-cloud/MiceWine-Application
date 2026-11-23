@@ -20,12 +20,29 @@ object WineWrapper {
         )
     }
 
-    fun wine(args: String, winePrefix: File, cwd: String) {
+    /**
+     * Launches a user-selected Windows executable without interpolating its path
+     * directly into shell syntax. Paths are canonicalized and shell-quoted.
+     */
+    fun wineExecutable(exeFile: File, winePrefix: File) {
+        val executable = exeFile.canonicalFile
+        require(executable.isFile) { "Executable does not exist" }
+        require(executable.extension.lowercase() in setOf("exe", "bat", "msi")) {
+            "Unsupported executable type"
+        }
+
+        val workingDirectory = executable.parentFile
+            ?: throw IllegalArgumentException("Executable has no parent directory")
+
         runCommand(
-            "cd $cwd;" +
-                    getEnv() + "WINEPREFIX=$winePrefix $IS_BOX64 wine $args"
+            "cd ${shellQuote(workingDirectory.path)};" +
+                    getEnv() + "WINEPREFIX=${shellQuote(winePrefix.canonicalPath)} " +
+                    "$IS_BOX64 wine ${shellQuote(executable.path)}"
         )
     }
+
+    private fun shellQuote(value: String): String =
+        "'" + value.replace("'", "'\\''") + "'"
 
     fun extractIcon(exeFile: File, output: String) {
         if (exeFile.name.endsWith(".exe")) {
