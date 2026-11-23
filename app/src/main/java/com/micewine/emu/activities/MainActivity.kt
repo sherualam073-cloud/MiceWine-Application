@@ -20,6 +20,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
@@ -88,7 +89,12 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 ACTION_RUN_WINE -> {
-                    val exePath = intent.getStringExtra("exePath")!!
+                    val exePath = intent.getStringExtra("exePath") ?: return
+
+                    if (validatedWineExecutable(exePath) == null) {
+                        Toast.makeText(context, "Invalid or unsupported executable path", Toast.LENGTH_SHORT).show()
+                        return
+                    }
 
                     tmpDir.deleteRecursively()
                     tmpDir.mkdirs()
@@ -190,12 +196,15 @@ class MainActivity : AppCompatActivity() {
         selectedFragment = "HomeFragment"
         fragmentLoader(homeFragment, true)
 
-        registerReceiver(receiver, object : IntentFilter(ACTION_RUN_WINE) {
-            init {
+        ContextCompat.registerReceiver(
+            this,
+            receiver,
+            IntentFilter(ACTION_RUN_WINE).apply {
                 addAction(ACTION_SETUP)
                 addAction(ACTION_SELECT_FILE_MANAGER)
-            }
-        })
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
 
         val exePath = intent.getStringExtra("exePath")
 
@@ -409,8 +418,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun validatedWineExecutable(path: String): File? {
+        return try {
+            File(path).canonicalFile.takeIf { file ->
+                file.isFile && file.extension.lowercase() in setOf("exe", "bat", "msi")
+            }
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+
     private suspend fun runWine(exePath: String, winePrefix: File) {
         withContext(Dispatchers.Default) {
+            if (exePath.isNotEmpty() && validatedWineExecutable(exePath) == null) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Invalid or unsupported executable path", Toast.LENGTH_SHORT).show()
+                }
+                return@withContext
+            }
+
             sharedLogs?.clear()
 
             installDXWrapper(winePrefix)
@@ -422,7 +450,7 @@ class MainActivity : AppCompatActivity() {
             if (exePath == "") {
                 WineWrapper.wine("explorer /desktop=shell,$selectedResolution TFM", winePrefix)
             } else {
-                WineWrapper.wine("'$exePath'", winePrefix, "'${File(exePath).parent!!}'")
+                WineWrapper.wineExecutable(validatedWineExecutable(exePath)!!, winePrefix)
             }
 
             runCommand("pkill -9 wineserver")
