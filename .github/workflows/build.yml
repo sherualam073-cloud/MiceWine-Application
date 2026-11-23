@@ -21,7 +21,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git config -f .gitmodules --get-regexp '^submodule\\..*\\.path$' | while read -r key path; do
+          git config -f .gitmodules --list | while IFS='=' read -r key path; do
+            case "$key" in
+              submodule.*.path) ;;
+              *) continue ;;
+            esac
             name="${key#submodule.}"
             name="${name%.path}"
             url="$(git config -f .gitmodules --get "submodule.${name}.url")"
