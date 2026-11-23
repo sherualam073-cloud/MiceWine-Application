@@ -209,19 +209,23 @@ class MainActivity : AppCompatActivity() {
         val exePath = intent.getStringExtra("exePath")
 
         if (exePath != null) {
-            val intent = Intent(this, EmulationActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-            }
-
-            WineWrapper.wineServer("--kill")
-
-            sendBroadcast(
-                Intent(ACTION_RUN_WINE).apply {
-                    putExtra("exePath", exePath)
+            if (validatedWineExecutable(exePath) == null) {
+                Toast.makeText(this, "Invalid or unsupported executable path", Toast.LENGTH_SHORT).show()
+            } else {
+                val emulationIntent = Intent(this, EmulationActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 }
-            )
 
-            startActivityIfNeeded(intent, 0)
+                WineWrapper.wineServer("--kill")
+
+                sendBroadcast(
+                    Intent(ACTION_RUN_WINE).apply {
+                        putExtra("exePath", exePath)
+                    }
+                )
+
+                startActivityIfNeeded(emulationIntent, 0)
+            }
         }
     }
 
@@ -423,9 +427,7 @@ class MainActivity : AppCompatActivity() {
             File(path).canonicalFile.takeIf { file ->
                 file.isFile && file.extension.lowercase() in setOf("exe", "bat", "msi")
             }
-        } catch (_: IOException) {
-            null
-        } catch (_: SecurityException) {
+        } catch (_: Exception) {
             null
         }
     }
