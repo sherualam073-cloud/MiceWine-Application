@@ -39,15 +39,7 @@ jobs:
               echo "Restoring missing source repository: $path"
               rm -rf "$path"
               mkdir -p "$(dirname "$path")"
-              git init "$path"
-              git -C "$path" remote add origin "$url"
-              submodule_sha="$(git ls-tree HEAD "$path" | awk '{print $3}')"
-              if [ -z "$submodule_sha" ]; then
-                echo "No pinned submodule commit found for $path" >&2
-                exit 1
-              fi
-              git -C "$path" fetch --depth 1 origin "$submodule_sha"
-              git -C "$path" checkout --detach FETCH_HEAD
+              git clone --depth 1 "$url" "$path"
             else
               echo "Source repository already present: $path"
             fi
