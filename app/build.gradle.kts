@@ -48,7 +48,7 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
-            buildConfigField("String", "GIT_SHORT_SHA", "\"${getGitShortSHA()}\"")
+            buildConfigField("String", "GIT_SHORT_SHA", "\"\u0024{getGitShortSHA()}\"")
         }
     }
 
@@ -57,7 +57,7 @@ android {
             aidl.srcDirs("src/main/aidl")
         }
     }
-    
+
     buildFeatures {
         aidl = true
         buildConfig = true
@@ -86,6 +86,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("org.apache.commons:commons-compress:1.26.1")
+    implementation("org.tukaani:xz:1.9")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
