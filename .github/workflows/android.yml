@@ -47,6 +47,9 @@ jobs:
                 app/src/main/cpp/xserver)
                   git clone --depth 1 --branch xorg-server-21.1.15 "$url" "$path"
                   ;;
+                app/src/main/cpp/pixman)
+                  git clone --depth 1 --branch pixman-0.43.4 "$url" "$path"
+                  ;;
                 *)
                   git clone --depth 1 "$url" "$path"
                   ;;
