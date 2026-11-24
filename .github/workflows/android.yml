@@ -41,7 +41,7 @@ jobs:
               mkdir -p "$(dirname "$path")"
               case "$name" in
                 app/src/main/cpp/libxfont)
-                  git clone --depth 1 --branch libXfont-2.0.7 "$url" "$path"
+                  git clone --depth 1 --branch libXfont2-2.0.7 "$url" "$path"
                   ;;
                 app/src/main/cpp/xserver)
                   git clone --depth 1 --branch xorg-server-21.1.15 "$url" "$path"
