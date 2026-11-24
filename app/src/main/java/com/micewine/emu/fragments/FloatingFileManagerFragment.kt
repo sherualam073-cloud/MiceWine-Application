@@ -5,8 +5,6 @@ import android.app.Dialog
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.RecyclerView
 import com.micewine.emu.R
@@ -17,17 +15,6 @@ import com.micewine.emu.adapters.AdapterFiles
 import java.io.File
 
 class FloatingFileManagerFragment : DialogFragment() {
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val rootFsSelectionWatcher = object : Runnable {
-        override fun run() {
-            if (customRootFSPath != null) {
-                dismissAllowingStateLoss()
-            } else {
-                mainHandler.postDelayed(this, 100)
-            }
-        }
-    }
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val inflater = requireActivity().layoutInflater
         val view = inflater.inflate(R.layout.fragment_floating_file_manager, null)
@@ -38,7 +25,10 @@ class FloatingFileManagerFragment : DialogFragment() {
         customRootFSPath = null
         calledSetup = false
 
-        recyclerView?.adapter = AdapterFiles(fileList, requireContext(), true)
+        recyclerView?.adapter = AdapterFiles(fileList, requireContext(), true) {
+            customRootFSPath = it
+            dismissAllowingStateLoss()
+        }
         refreshFiles()
 
         val dialog = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
@@ -46,24 +36,17 @@ class FloatingFileManagerFragment : DialogFragment() {
             .create()
 
         isCancelable = false
-        mainHandler.post(rootFsSelectionWatcher)
 
         return dialog
     }
 
     override fun onDismiss(dialog: DialogInterface) {
-        mainHandler.removeCallbacks(rootFsSelectionWatcher)
         super.onDismiss(dialog)
 
         if (!calledSetup && customRootFSPath != null) {
             calledSetup = true
             requireContext().sendBroadcast(Intent(ACTION_SETUP))
         }
-    }
-
-    override fun onDestroy() {
-        mainHandler.removeCallbacks(rootFsSelectionWatcher)
-        super.onDestroy()
     }
 
     companion object {
