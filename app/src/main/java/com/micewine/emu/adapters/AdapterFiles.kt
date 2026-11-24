@@ -56,7 +56,7 @@ class AdapterFiles(
         }
 
         val click = View.OnClickListener {
-            val currentPosition = holder.bindingAdapterPosition
+            val currentPosition = holder.adapterPosition
             if (currentPosition != RecyclerView.NO_POSITION) {
                 handleFileClick(currentPosition)
             }
@@ -122,7 +122,7 @@ class AdapterFiles(
         }
 
         override fun onLongClick(v: View): Boolean {
-            val position = bindingAdapterPosition
+            val position = adapterPosition
             if (position == RecyclerView.NO_POSITION) return false
             selectedFile = fileList[position].file.absolutePath
             return (fileManagerCwd == fileManagerDefaultDir) || selectedFile == ".."
