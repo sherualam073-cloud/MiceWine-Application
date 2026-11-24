@@ -21,7 +21,7 @@ import com.micewine.emu.core.WineWrapper.extractIcon
 import com.micewine.emu.fragments.FloatingFileManagerFragment.Companion.refreshFiles
 import java.io.File
 
-class AdapterFiles(private val fileList: List<FileList>, private val context: Context, private val isFloatFilesDialog: Boolean) : RecyclerView.Adapter<AdapterFiles.ViewHolder>() {
+class AdapterFiles(private val fileList: List<FileList>, private val context: Context, private val isFloatFilesDialog: Boolean, private val onRootFsSelected: ((String) -> Unit)? = null) : RecyclerView.Adapter<AdapterFiles.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.adapter_files_item, parent, false)
         return ViewHolder(itemView)
@@ -65,6 +65,10 @@ class AdapterFiles(private val fileList: List<FileList>, private val context: Co
 
         init {
             itemView.setOnClickListener(this)
+            fileName.setOnClickListener(this)
+            icon.setOnClickListener(this)
+            itemView.isClickable = true
+            itemView.isFocusable = true
             itemView.setOnLongClickListener(this)
         }
 
@@ -84,6 +88,7 @@ class AdapterFiles(private val fileList: List<FileList>, private val context: Co
                     val fileName = settingsModel.file.name.lowercase()
                     if (fileName.endsWith(".zip") || fileName.endsWith(".rat")) {
                         customRootFSPath = settingsModel.file.path
+                        onRootFsSelected?.invoke(settingsModel.file.path)
                     }
                 } else if (settingsModel.file.isDirectory) {
                     fileManagerCwd = settingsModel.file.path
