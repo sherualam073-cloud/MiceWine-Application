@@ -81,7 +81,8 @@ class AdapterFiles(private val fileList: List<FileList>, private val context: Co
 
                     refreshFiles()
                 } else if (settingsModel.file.isFile) {
-                    if (settingsModel.file.name.contains(".zip")) {
+                    val fileName = settingsModel.file.name.lowercase()
+                    if (fileName.endsWith(".zip") || fileName.endsWith(".rat")) {
                         customRootFSPath = settingsModel.file.path
                     }
                 } else if (settingsModel.file.isDirectory) {
