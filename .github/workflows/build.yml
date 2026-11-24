@@ -34,7 +34,17 @@ jobs:
               echo "Restoring missing source repository: $path"
               rm -rf "$path"
               mkdir -p "$(dirname "$path")"
-              git clone --depth 1 "$url" "$path"
+              case "$name" in
+                app/src/main/cpp/libxfont)
+                  git clone --depth 1 --branch libXfont-2.0.7 "$url" "$path"
+                  ;;
+                app/src/main/cpp/xserver)
+                  git clone --depth 1 --branch xorg-server-21.1.15 "$url" "$path"
+                  ;;
+                *)
+                  git clone --depth 1 "$url" "$path"
+                  ;;
+              esac
             else
               echo "Source repository already present: $path"
             fi
