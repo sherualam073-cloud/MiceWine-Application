@@ -628,6 +628,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         fun setSharedVars(activity: Activity) {
+            // Keep each installed package in its own private files directory.
+            // This prevents the side-by-side test build from writing into the
+            // original MiceWine installation's /data/data directory.
+            appRootDir = activity.filesDir
+            usrDir = File(appRootDir, "usr")
+            tmpDir = File(usrDir, "tmp")
+            homeDir = File(appRootDir, "home")
+            fileManagerDefaultDir = "$homeDir/.wine/dosdevices"
+            if (fileManagerCwd == "/data/data/com.micewine.emu/files/home/.wine/dosdevices") {
+                fileManagerCwd = fileManagerDefaultDir
+            }
+
             val preferences = PreferenceManager.getDefaultSharedPreferences(activity)
 
             appLang = activity.resources.getString(R.string.app_lang)
