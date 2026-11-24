@@ -527,7 +527,7 @@ class MainActivity : AppCompatActivity() {
         var appRootDir = File("/data/data/com.micewine.emu/files")
         var appBuiltinRootfs: Boolean = false
         private var unixUsername = runCommandWithOutput("whoami").replace("\n", "")
-        var customRootFSPath: String? = null
+        @Volatile var customRootFSPath: String? = null
         var usrDir = File("$appRootDir/usr")
         var tmpDir = File("$usrDir/tmp")
         var homeDir = File("$appRootDir/home")
