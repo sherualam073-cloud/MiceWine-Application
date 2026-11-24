@@ -4,12 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - '**'
   pull_request:
     branches: [ "main" ]
-    paths-ignore:
-      - '**'
 
 permissions:
   contents: read
