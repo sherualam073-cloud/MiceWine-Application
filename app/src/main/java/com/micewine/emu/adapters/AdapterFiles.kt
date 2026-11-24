@@ -3,7 +3,7 @@ package com.micewine.emu.adapters
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.util.Log
+import android.widget.Toast
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,95 +20,111 @@ import com.micewine.emu.activities.MainActivity.Companion.usrDir
 import com.micewine.emu.core.WineWrapper.extractIcon
 import com.micewine.emu.fragments.FloatingFileManagerFragment.Companion.refreshFiles
 import java.io.File
+import java.util.Locale
 
-class AdapterFiles(private val fileList: List<FileList>, private val context: Context, private val isFloatFilesDialog: Boolean, private val onRootFsSelected: ((String) -> Unit)? = null) : RecyclerView.Adapter<AdapterFiles.ViewHolder>() {
+class AdapterFiles(
+    private val fileList: List<FileList>,
+    private val context: Context,
+    private val isFloatFilesDialog: Boolean,
+    private val onRootFsSelected: ((String) -> Unit)? = null
+) : RecyclerView.Adapter<AdapterFiles.ViewHolder>() {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.adapter_files_item, parent, false)
+        val itemView = LayoutInflater.from(parent.context)
+            .inflate(R.layout.adapter_files_item, parent, false)
         return ViewHolder(itemView)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val sList = fileList[position]
+        val file = fileList[position].file
+        holder.fileName.text =
+            if (fileManagerCwd == fileManagerDefaultDir) file.name.uppercase(Locale.ROOT)
+            else file.name
 
-        if (fileManagerCwd == fileManagerDefaultDir) {
-            holder.fileName.text = sList.file.name.uppercase()
-        } else {
-            holder.fileName.text = sList.file.name
-        }
-
-        if (sList.file.isDirectory) {
+        if (file.isDirectory) {
             holder.icon.setImageResource(R.drawable.ic_folder)
-        } else if (sList.file.isFile) {
-            if (sList.file.name.endsWith(".exe")) {
-                val output = "$usrDir/icons/${sList.file.nameWithoutExtension}-icon.ico"
-
-                extractIcon(sList.file, output)
-
-                if (File(output).exists()) {
-                    holder.icon.setImageBitmap(BitmapFactory.decodeFile(output))
-                } else {
-                    holder.icon.setImageResource(R.drawable.ic_log)
-                }
+        } else if (file.isFile && file.name.endsWith(".exe", ignoreCase = true)) {
+            val output = "$usrDir/icons/${file.nameWithoutExtension}-icon.ico"
+            extractIcon(file, output)
+            if (File(output).exists()) {
+                holder.icon.setImageBitmap(BitmapFactory.decodeFile(output))
             } else {
                 holder.icon.setImageResource(R.drawable.ic_log)
             }
+        } else {
+            holder.icon.setImageResource(R.drawable.ic_log)
+        }
+
+        val click = View.OnClickListener {
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                handleFileClick(currentPosition)
+            }
+        }
+        holder.itemView.setOnClickListener(click)
+        holder.fileName.setOnClickListener(click)
+        holder.icon.setOnClickListener(click)
+    }
+
+    private fun handleFileClick(position: Int) {
+        val file = fileList.getOrNull(position)?.file ?: return
+
+        if (isFloatFilesDialog) {
+            when {
+                file.name == ".." -> {
+                    fileManagerCwd = File(fileManagerCwd).parent ?: fileManagerCwd
+                    refreshFiles()
+                }
+                file.isDirectory -> {
+                    fileManagerCwd = file.absolutePath
+                    refreshFiles()
+                }
+                file.isFile -> {
+                    val name = file.name.lowercase(Locale.ROOT)
+                    val supportedRootFs = name.endsWith(".zip") ||
+                        name.endsWith(".rat") ||
+                        name.endsWith(".rat.xz") ||
+                        name.endsWith(".tar.xz")
+
+                    if (supportedRootFs) {
+                        val path = file.canonicalPath
+                        customRootFSPath = path
+                        Toast.makeText(context, "RootFS selected", Toast.LENGTH_SHORT).show()
+                        onRootFsSelected?.invoke(path)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Please select a .rat or .zip RootFS file",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        } else {
+            val intent = Intent(ACTION_SELECT_FILE_MANAGER).apply {
+                putExtra("selectedFile", file.absolutePath)
+            }
+            context.sendBroadcast(intent)
         }
     }
 
-    override fun getItemCount(): Int {
-        return fileList.size
-    }
+    override fun getItemCount(): Int = fileList.size
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
+        View.OnLongClickListener {
         val fileName: TextView = itemView.findViewById(R.id.title_preferences_model)
         val icon: ImageView = itemView.findViewById(R.id.set_img)
 
         init {
-            itemView.setOnClickListener(this)
-            fileName.setOnClickListener(this)
-            icon.setOnClickListener(this)
             itemView.isClickable = true
             itemView.isFocusable = true
             itemView.setOnLongClickListener(this)
         }
 
-        override fun onClick(v: View) {
-            if (adapterPosition < 0) {
-                return
-            }
-
-            val settingsModel = fileList[adapterPosition]
-
-            if (isFloatFilesDialog) {
-                if (settingsModel.file.name == "..") {
-                    fileManagerCwd = File(fileManagerCwd).parent!!
-
-                    refreshFiles()
-                } else if (settingsModel.file.isFile) {
-                    val fileName = settingsModel.file.name.lowercase()
-                    if (fileName.endsWith(".zip") || fileName.endsWith(".rat")) {
-                        customRootFSPath = settingsModel.file.path
-                        onRootFsSelected?.invoke(settingsModel.file.path)
-                    }
-                } else if (settingsModel.file.isDirectory) {
-                    fileManagerCwd = settingsModel.file.path
-
-                    refreshFiles()
-                }
-            } else {
-                val intent = Intent(ACTION_SELECT_FILE_MANAGER).apply {
-                    putExtra("selectedFile", settingsModel.file.path)
-                }
-
-                context.sendBroadcast(intent)
-            }
-        }
-
         override fun onLongClick(v: View): Boolean {
-            val settingsModel = fileList[adapterPosition]
-
-            selectedFile = settingsModel.file.path
-
+            val position = bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return false
+            selectedFile = fileList[position].file.absolutePath
             return (fileManagerCwd == fileManagerDefaultDir) || selectedFile == ".."
         }
     }
