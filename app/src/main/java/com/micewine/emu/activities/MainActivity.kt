@@ -139,12 +139,23 @@ class MainActivity : AppCompatActivity() {
 
                 ACTION_SETUP -> {
                     lifecycleScope.launch {
-                        if (appBuiltinRootfs) {
-                            setupMiceWine("")
-                        } else {
-                            SetupFragment().show(supportFragmentManager, "")
+                        try {
+                            if (appBuiltinRootfs) {
+                                setupMiceWine("")
+                            } else {
+                                SetupFragment().show(supportFragmentManager, "")
 
-                            setupMiceWine("$customRootFSPath")
+                                setupMiceWine("$customRootFSPath")
+                            }
+                        } catch (error: Exception) {
+                            android.util.Log.e("MiceWineSetup", "RootFS setup failed", error)
+                            runOnUiThread {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "RootFS setup failed: ${error.message ?: error.javaClass.simpleName}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
                     }
                 }
