@@ -48,7 +48,7 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
-            buildConfigField("String", "GIT_SHORT_SHA", "\"\${getGitShortSHA()}\"")
+            buildConfigField("String", "GIT_SHORT_SHA", "\"${getGitShortSHA()}\"")
         }
     }
 
