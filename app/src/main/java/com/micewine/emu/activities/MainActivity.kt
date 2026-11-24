@@ -508,7 +508,13 @@ class MainActivity : AppCompatActivity() {
                 extractZip(rootfs, "$appRootDir")
             }
 
-            File("$appRootDir/wine-utils/CoreFonts").copyRecursively(File("$appRootDir/wine/share/wine/fonts"), true)
+            val coreFontsDir = File("$appRootDir/wine-utils/CoreFonts")
+            val wineFontsDir = File("$appRootDir/wine/share/wine/fonts")
+            if (coreFontsDir.isDirectory) {
+                coreFontsDir.copyRecursively(wineFontsDir, true)
+            } else {
+                android.util.Log.w("MiceWineSetup", "CoreFonts directory missing; skipping optional font copy: ${coreFontsDir.absolutePath}")
+            }
 
             runCommand("chmod 700 -R $appRootDir")
             runCommand("$usrDir/generateSymlinks.sh")
