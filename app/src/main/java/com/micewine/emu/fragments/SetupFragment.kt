@@ -24,8 +24,10 @@ class SetupFragment : DialogFragment() {
         isCancelable = false
 
         Thread {
-            while (!setupDone) {
-                requireActivity().runOnUiThread {
+            while (!setupDone && isAdded) {
+                activity?.runOnUiThread {
+                    if (!isAdded) return@runOnUiThread
+
                     if (progressBarValue > 0) {
                         progressTextBar.text = "$progressBarValue%"
                     } else {
@@ -37,10 +39,14 @@ class SetupFragment : DialogFragment() {
                     titleText.text = dialogTitleText
                 }
 
-                Thread.sleep(16)
+                Thread.sleep(100)
             }
 
-            dismiss()
+            activity?.runOnUiThread {
+                if (isAdded && setupDone) {
+                    dismissAllowingStateLoss()
+                }
+            }
         }.start()
 
         return AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog).setView(view).create()
