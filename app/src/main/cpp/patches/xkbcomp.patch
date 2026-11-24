@@ -133,6 +133,30 @@ index 6aedb67..12b0f27 100644
  #ifdef DEBUG
  unsigned int debugFlags;
  #endif
++
++/* Keep the state used by the embedded xkbcomp argument and output paths. */
++#define WANT_DEFAULT 0
++#define WANT_XKM_FILE 1
++#define WANT_C_HDR 2
++#define WANT_XKB_FILE 3
++#define WANT_X_SERVER 4
++#define WANT_LISTING 5
++#define INPUT_UNKNOWN 0
++#define INPUT_XKB 1
++#define INPUT_XKM 2
++static const char *fileTypeExt[] = {
++    "XXX", "xkm", "h", "xkb", "dir"
++};
++static unsigned inputFormat, outputFormat;
++static const char *inDpyName;
++static const char *outDpyName;
++static Display *inDpy;
++static Display *outDpy;
++static Bool showImplicit = False;
++static Bool synch = False;
++static Bool computeDflts = False;
++static Bool xkblist = False;
++static unsigned optionalParts = 0;
  
 -static const char *fileTypeExt[] = {
 -    "XXX",
