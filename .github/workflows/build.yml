@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - '**'
+    paths:
+      - '.github/workflows/build.yml'
+      - 'app/src/main/cpp/recipes/pixman.cmake'
 
 permissions:
   contents: read
