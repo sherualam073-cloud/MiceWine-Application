@@ -20,7 +20,21 @@ find_package(Python3 REQUIRED)
 find_package(BISON REQUIRED)
 
 function(target_apply_patch patch_target d p)
-    execute_process(COMMAND "bash" "-c" "patch -p1 -d ${d} -i ${p} -R --dry-run > /dev/null 2>&1 || patch -p1 -N -d ${d} -i ${p} -r -")
+    execute_process(
+            COMMAND patch -p1 -d "${d}" -i "${p}" -R --dry-run
+            RESULT_VARIABLE reverse_result
+            OUTPUT_QUIET
+            ERROR_QUIET)
+    if (reverse_result EQUAL 0)
+        message(STATUS "Patch already applied: ${patch_target}")
+    else()
+        execute_process(
+                COMMAND patch -p1 -N -d "${d}" -i "${p}" -r -
+                RESULT_VARIABLE patch_result)
+        if (NOT patch_result EQUAL 0)
+            message(FATAL_ERROR "Failed to apply patch for ${patch_target}: ${p}")
+        endif()
+    endif()
 endfunction()
 
 set(test_compile_options
