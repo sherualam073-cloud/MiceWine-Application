@@ -55,19 +55,17 @@ class AdapterFiles(
             holder.icon.setImageResource(R.drawable.ic_log)
         }
 
+        // Capture the bound file directly. This avoids relying on RecyclerView
+        // adapter positions when the floating RootFS picker refreshes its list.
         val click = View.OnClickListener {
-            val currentPosition = holder.adapterPosition
-            if (currentPosition != RecyclerView.NO_POSITION) {
-                handleFileClick(currentPosition)
-            }
+            handleFileClick(file)
         }
         holder.itemView.setOnClickListener(click)
         holder.fileName.setOnClickListener(click)
         holder.icon.setOnClickListener(click)
     }
 
-    private fun handleFileClick(position: Int) {
-        val file = fileList.getOrNull(position)?.file ?: return
+    private fun handleFileClick(file: File) {
 
         if (isFloatFilesDialog) {
             when {
