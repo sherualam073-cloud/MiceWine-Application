@@ -128,8 +128,8 @@ target_compile_options(xserver_mi PRIVATE ${compile_options})
 
 set(OS_SOURCES
         WaitFor.c access.c auth.c backtrace.c client.c connection.c inputthread.c io.c mitauth.c
-        oscolor.c osinit.c ospoll.c utils.c xdmauth.c xsha1.c xstrans.c xprintf.c log.c strlcpy.c
-        busfault.c timingsafe_memcmp.c rpcauth.c xdmcp.c)
+        osinit.c ospoll.c utils.c xdmauth.c xsha1.c xstrans.c xprintf.c log.c strlcpy.c
+        busfault.c timingsafe_memcmp.c xdmcp.c)
 list(TRANSFORM OS_SOURCES PREPEND "xserver/os/")
 add_library(xserver_os STATIC ${OS_SOURCES})
 target_include_directories(xserver_os PRIVATE ${inc})
