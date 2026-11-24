@@ -20,6 +20,7 @@ find_package(Python3 REQUIRED)
 find_package(BISON REQUIRED)
 
 function(target_apply_patch patch_target d p)
+    message(STATUS "Validating native source patch: ${patch_target}")
     execute_process(
             COMMAND patch -p1 -d "${d}" -i "${p}" -R --dry-run
             RESULT_VARIABLE reverse_result
