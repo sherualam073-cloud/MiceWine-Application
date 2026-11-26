@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
                 ACTION_RUN_WINE -> {
                     val exePath = intent.getStringExtra("exePath") ?: return
 
-                    if (validatedWineExecutable(exePath) == null) {
+                    if (exePath.isNotEmpty() && validatedWineExecutable(exePath) == null) {
                         Toast.makeText(context, "Invalid or unsupported executable path", Toast.LENGTH_SHORT).show()
                         return
                     }
