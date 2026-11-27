@@ -23,9 +23,8 @@ android {
 
     buildTypes {
         debug {
-            // Use a fresh package ID so this test build can install alongside
-            // older MiceWine builds without replacing their app data.
-            applicationIdSuffix = ".build60"
+            // Unique package ID for Build 67; keep older app data intact.
+            applicationIdSuffix = ".build67"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -51,7 +50,7 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
-            buildConfigField("String", "GIT_SHORT_SHA", "\"${getGitShortSHA()}\"")
+            buildConfigField("String", "GIT_SHORT_SHA", "\"\${getGitShortSHA()}\"")
         }
     }
 
