@@ -23,8 +23,8 @@ android {
 
     buildTypes {
         debug {
-            // Unique package ID for Build 67; keep older app data intact.
-            applicationIdSuffix = ".build67"
+            // Unique package ID for Build 68; keep older app data intact.
+            applicationIdSuffix = ".build68"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
