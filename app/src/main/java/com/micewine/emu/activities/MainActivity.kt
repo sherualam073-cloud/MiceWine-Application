@@ -496,6 +496,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun normalizeExtractedRootFs() {
+        val expectedUsr = File(usrDir, "bin/box64")
+        if (expectedUsr.isFile) return
+
+        val nestedBox64 = appRootDir.walkTopDown()
+            .maxDepth(7)
+            .firstOrNull { file ->
+                file.isFile && file.name == "box64" &&
+                    file.parentFile?.name == "bin" &&
+                    file.parentFile?.parentFile?.name == "usr"
+            } ?: return
+
+        val nestedUsr = nestedBox64.parentFile!!.parentFile!!
+        val wrapperRoot = nestedUsr.parentFile ?: return
+
+        if (nestedUsr.canonicalFile != usrDir.canonicalFile) {
+            if (usrDir.exists()) usrDir.deleteRecursively()
+            if (!nestedUsr.renameTo(usrDir)) {
+                throw IOException("Cannot move nested RootFS usr directory into place")
+            }
+        }
+
+        listOf("wine", "wine-utils").forEach { name ->
+            val nested = File(wrapperRoot, name)
+            val expected = File(appRootDir, name)
+            if (nested.isDirectory && !expected.exists()) {
+                if (!nested.renameTo(expected)) {
+                    throw IOException("Cannot move nested RootFS $name directory into place")
+                }
+            }
+        }
+    }
+
     private suspend fun setupMiceWine(rootfs: String) {
         withContext(Dispatchers.IO) {
             appRootDir.mkdirs()
@@ -513,6 +546,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 extractZip(rootfs, "$appRootDir")
             }
+
+            // Some externally generated RootFS archives wrap usr/ and wine/ in
+            // an extra top-level directory. Normalize that layout before validation.
+            normalizeExtractedRootFs()
 
             // Stop setup early if the RootFS archive was not fully extracted.
             val box64Binary = File("$usrDir/bin/box64")
