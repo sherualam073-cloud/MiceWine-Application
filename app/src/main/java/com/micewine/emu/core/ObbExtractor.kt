@@ -69,43 +69,70 @@ object ObbExtractor {
 
         // Some RootFS bundles contain Box64 as a nested MiceWine .rat package
         // instead of placing usr/bin/box64 directly in the outer ZIP.
-        installBundledBox64Package(destination)
+        installBundledRatPackages(destination)
     }
 
-    private fun installBundledBox64Package(destination: File) {
-        val expectedBox64 = File(destination, "usr/bin/box64")
-        if (expectedBox64.isFile) return
+    // RootFS bundles keep architecture-specific components in nested .rat files.
+    // Merge their files/ payloads and collect each package's generated symlink commands.
+    private fun installBundledRatPackages(destination: File) {
+        val ratPackages = destination.walkTopDown()
+            .maxDepth(4)
+            .filter { it.isFile && it.extension.equals("rat", ignoreCase = true) }
+            .toList()
+        if (ratPackages.isEmpty()) return
 
-        val packageDir = File(destination, "box64")
-        val ratPackage = packageDir.listFiles()
-            ?.firstOrNull { it.isFile && it.extension.equals("rat", ignoreCase = true) }
-            ?: return
-
-        val temporary = File(destination, ".box64-rat-extract")
-        temporary.deleteRecursively()
-        if (!temporary.mkdirs()) {
-            throw IOException("Cannot create temporary Box64 package directory")
-        }
+        val temporary = File(destination, ".rat-package-extract")
+        val symlinkCommands = StringBuilder()
+        var installedBox64 = false
 
         try {
-            val ratZip = ZipFile(ratPackage)
-            if (!ratZip.isValidZipFile) {
-                throw IOException("Bundled Box64 .rat package is not a valid ZIP archive")
-            }
-            ratZip.extractAll(temporary.absolutePath)
+            ratPackages.forEach { ratPackage ->
+                temporary.deleteRecursively()
+                if (!temporary.mkdirs()) {
+                    throw IOException("Cannot create temporary .rat package directory")
+                }
 
-            val packageFiles = File(temporary, "files")
-            if (!packageFiles.isDirectory) {
-                throw IOException("Bundled Box64 package has no files/ directory")
+                val ratZip = ZipFile(ratPackage)
+                if (!ratZip.isValidZipFile) {
+                    throw IOException("Bundled .rat package is not a valid ZIP archive: ${ratPackage.name}")
+                }
+                ratZip.extractAll(temporary.absolutePath)
+
+                val packageFiles = File(temporary, "files")
+                if (packageFiles.isDirectory) {
+                    packageFiles.copyRecursively(destination, overwrite = true)
+                }
+
+                listOf("makeSymlinks.sh", "generateSymlinks.sh").forEach { scriptName ->
+                    val script = File(temporary, scriptName)
+                    if (script.isFile) {
+                        symlinkCommands.append("\n").append(script.readText()).append("\n")
+                    }
+                }
+                if (ratPackage.parentFile?.name == "box64" || ratPackage.name.contains("box64", true)) {
+                    installedBox64 = File(destination, "usr/bin/box64").isFile
+                }
+                lastExtractionReport += "; processed ${ratPackage.name}"
             }
 
-            packageFiles.copyRecursively(destination, overwrite = true)
+            val expectedBox64 = File(destination, "usr/bin/box64")
             if (!expectedBox64.isFile) {
-                throw IOException("Bundled Box64 package did not contain files/usr/bin/box64")
+                throw IOException("Bundled .rat packages did not provide files/usr/bin/box64")
             }
-
             Os.chmod(expectedBox64.absolutePath, 448)
-            lastExtractionReport += "; installed Box64 from ${ratPackage.name}"
+
+            val usrDirectory = File(destination, "usr")
+            if (!usrDirectory.exists() && !usrDirectory.mkdirs()) {
+                throw IOException("Cannot create RootFS usr directory")
+            }
+            val symlinkScript = File(usrDirectory, "generateSymlinks.sh")
+            if (symlinkCommands.isNotEmpty()) {
+                symlinkScript.writeText("#!/system/bin/sh\n" + symlinkCommands.toString())
+            } else if (!symlinkScript.isFile) {
+                throw IOException("Bundled .rat packages do not contain makeSymlinks.sh")
+            }
+            Os.chmod(symlinkScript.absolutePath, 448)
+            lastExtractionReport += "; symlink script=${symlinkScript.isFile}, box64=$installedBox64"
         } finally {
             temporary.deleteRecursively()
         }
