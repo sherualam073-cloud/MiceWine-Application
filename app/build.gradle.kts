@@ -25,7 +25,7 @@ android {
         debug {
             // Use a fresh package ID so this test build can install alongside
             // older MiceWine builds without replacing their app data.
-            applicationIdSuffix = ".build57"
+            applicationIdSuffix = ".build58"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
