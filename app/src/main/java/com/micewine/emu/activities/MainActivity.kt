@@ -2,6 +2,7 @@ package com.micewine.emu.activities
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.ActivityManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -151,11 +152,17 @@ class MainActivity : AppCompatActivity() {
                         } catch (error: Exception) {
                             android.util.Log.e("MiceWineSetup", "RootFS setup failed", error)
                             runOnUiThread {
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    "RootFS setup failed: ${error.message ?: error.javaClass.simpleName}",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                val report = "RootFS setup failed: ${error.message ?: error.javaClass.simpleName}"
+                                AlertDialog.Builder(this@MainActivity)
+                                    .setTitle("RootFS diagnostic report")
+                                    .setMessage(report)
+                                    .setPositiveButton("Copy report") { _, _ ->
+                                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("RootFS report", report))
+                                        Toast.makeText(this@MainActivity, "Report copied", Toast.LENGTH_SHORT).show()
+                                    }
+                                    .setNegativeButton("Close", null)
+                                    .show()
                             }
                         }
                     }
