@@ -3,10 +3,13 @@ package com.micewine.emu.core
 import android.os.Build
 import com.micewine.emu.core.EnvVars.getEnv
 import com.micewine.emu.core.ShellLoader.runCommand
+import com.micewine.emu.activities.MainActivity.Companion.usrDir
 import java.io.File
 
 object WineWrapper {
-    private var IS_BOX64 = if (Build.SUPPORTED_ABIS[0] == "x86_64") "" else "box64"
+    // Use the extracted executable directly instead of depending on PATH lookup.
+    private val IS_BOX64: String
+        get() = if (Build.SUPPORTED_ABIS[0] == "x86_64") "" else "'${File(usrDir, "bin/box64").absolutePath}'"
 
     fun wineServer(args: String) {
         runCommand(
