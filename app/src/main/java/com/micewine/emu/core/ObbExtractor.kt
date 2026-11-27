@@ -104,7 +104,21 @@ object ObbExtractor {
 
                             entry.isFile -> {
                                 output.parentFile?.mkdirs()
-                                Files.newOutputStream(output.toPath()).use { out -> tar.copyTo(out) }
+                                // Read exactly the current TAR entry. copyTo() consumes
+                                // the rest of the archive and skips all following RootFS files.
+                                Files.newOutputStream(output.toPath()).use { out ->
+                                    val buffer = ByteArray(64 * 1024)
+                                    var remaining = entry.size
+                                    while (remaining > 0) {
+                                        val bytesToRead = minOf(buffer.size.toLong(), remaining).toInt()
+                                        val count = tar.read(buffer, 0, bytesToRead)
+                                        if (count < 0) {
+                                            throw IOException("Unexpected end of RootFS entry: ${entry.name}")
+                                        }
+                                        out.write(buffer, 0, count)
+                                        remaining -= count
+                                    }
+                                }
                                 Os.chmod(output.absolutePath, entry.mode)
                             }
                         }
