@@ -16,6 +16,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 object ObbExtractor {
+    @Volatile var lastExtractionReport: String = "No extraction report"
+
     @SuppressLint("SetTextI18n")
     @Throws(IOException::class)
     fun extractZip(archivePath: String?, destinationPath: String) {
@@ -44,6 +46,9 @@ object ObbExtractor {
     }
 
     private fun extractZipArchive(source: File, destination: File) {
+        val headers = ZipFile(source).fileHeaders
+        val box64 = headers.firstOrNull { it.fileName.endsWith("usr/bin/box64") || it.fileName.endsWith("usr\\bin\\box64") }
+        lastExtractionReport = "ZIP entries=${headers.size}, box64=${box64?.fileName ?: "not listed"}, first=${headers.take(8).joinToString { it.fileName }}"
         progressBarIsIndeterminate = false
         val zipFile = ZipFile(source)
         zipFile.isRunInThread = true
@@ -67,12 +72,22 @@ object ObbExtractor {
         progressBarIsIndeterminate = true
         val root = destination.canonicalFile
         val directories = mutableListOf<Pair<File, Int>>()
+        var entryCount = 0
+        var fileCount = 0
+        var box64Entry = "not listed"
+        val sampleEntries = mutableListOf<String>()
 
         BufferedInputStream(FileInputStream(source)).use { fileInput ->
             XZCompressorInputStream(fileInput).use { xzInput ->
                 TarArchiveInputStream(xzInput).use { tar ->
                     var entry = tar.nextTarEntry
                     while (entry != null) {
+                        entryCount++
+                        if (sampleEntries.size < 12) sampleEntries.add(entry.name)
+                        if (entry.name.replace('\\\\', '/').endsWith("usr/bin/box64")) {
+                            box64Entry = "name=${entry.name}, file=${entry.isFile}, size=${entry.size}, type=${entry.linkFlag}"
+                        }
+                        if (entry.isFile) fileCount++
                         val output = File(root, entry.name).canonicalFile
                         if (output != root && !output.path.startsWith(root.path + File.separator)) {
                             throw IOException("Unsafe path in RootFS archive")
@@ -131,6 +146,7 @@ object ObbExtractor {
         directories.asReversed().forEach { (directory, mode) ->
             Os.chmod(directory.absolutePath, mode)
         }
+        lastExtractionReport = "TAR.XZ entries=$entryCount, regularFiles=$fileCount, box64=$box64Entry, first=${sampleEntries.joinToString(" | ")}"
         progressBarValue = 0
         progressBarIsIndeterminate = false
     }
