@@ -243,12 +243,18 @@ class MainActivity : AppCompatActivity() {
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
 
-        if (!usrDir.exists()) {
-            val intent = Intent(this, WelcomeActivity::class.java)
+        val rootfsReady =
+            File("$usrDir/bin/box64").isFile &&
+            File("$usrDir/generateSymlinks.sh").isFile &&
+            File("$appRootDir/wine/bin/wine").isFile &&
+            File("$homeDir/.wine/drive_c").isDirectory &&
+            File("$homeDir/.wine/dosdevices").isDirectory
 
+        setupDone = rootfsReady
+
+        if (!rootfsReady) {
+            val intent = Intent(this, WelcomeActivity::class.java)
             startActivity(intent)
-        } else {
-            setupDone = true
         }
     }
 
@@ -508,6 +514,17 @@ class MainActivity : AppCompatActivity() {
                 extractZip(rootfs, "$appRootDir")
             }
 
+            // Stop setup early if the RootFS archive was not fully extracted.
+            val box64Binary = File("$usrDir/bin/box64")
+            if (!box64Binary.isFile) {
+                throw IOException("RootFS incomplete: usr/bin/box64 is missing")
+            }
+
+            val symlinkScript = File("$usrDir/generateSymlinks.sh")
+            if (!symlinkScript.isFile) {
+                throw IOException("RootFS incomplete: usr/generateSymlinks.sh is missing")
+            }
+
             val coreFontsDir = File("$appRootDir/wine-utils/CoreFonts")
             val wineFontsDir = File("$appRootDir/wine/share/wine/fonts")
             if (coreFontsDir.isDirectory) {
@@ -518,6 +535,10 @@ class MainActivity : AppCompatActivity() {
 
             runCommand("chmod 700 -R $appRootDir")
             runCommand("$usrDir/generateSymlinks.sh")
+
+            if (!box64Binary.canExecute()) {
+                throw IOException("RootFS invalid: usr/bin/box64 is not executable")
+            }
 
             File("$usrDir/icons").mkdirs()
 
@@ -532,6 +553,11 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch { runXServer(":0") }
 
             setupWinePrefix(File("$homeDir/.wine"))
+
+            if (!File("$homeDir/.wine/drive_c").isDirectory ||
+                !File("$homeDir/.wine/dosdevices").isDirectory) {
+                throw IOException("Wine Prefix creation failed: drive_c or dosdevices is missing")
+            }
 
             fileManagerCwd = fileManagerDefaultDir
 
