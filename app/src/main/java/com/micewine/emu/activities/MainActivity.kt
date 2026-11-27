@@ -56,6 +56,7 @@ import com.micewine.emu.activities.GeneralSettings.Companion.SELECTED_VKD3D_KEY
 import com.micewine.emu.activities.GeneralSettings.Companion.SELECTED_WINED3D_KEY
 import com.micewine.emu.activities.GeneralSettings.Companion.WINE_ESYNC_KEY
 import com.micewine.emu.activities.GeneralSettings.Companion.WINE_LOG_LEVEL_KEY
+import com.micewine.emu.core.ObbExtractor
 import com.micewine.emu.core.ObbExtractor.extractZip
 import com.micewine.emu.core.ShellLoader.runCommand
 import com.micewine.emu.core.ShellLoader.runCommandWithOutput
@@ -554,7 +555,7 @@ class MainActivity : AppCompatActivity() {
             // Stop setup early if the RootFS archive was not fully extracted.
             val box64Binary = File("$usrDir/bin/box64")
             if (!box64Binary.isFile) {
-                throw IOException("RootFS incomplete: usr/bin/box64 is missing")
+                throw IOException("RootFS incomplete: usr/bin/box64 is missing. Archive check: ${ObbExtractor.lastExtractionReport}")
             }
 
             val symlinkScript = File("$usrDir/generateSymlinks.sh")
