@@ -66,6 +66,49 @@ object ObbExtractor {
 
         zipFile.close()
         progressBarValue = 0
+
+        // Some RootFS bundles contain Box64 as a nested MiceWine .rat package
+        // instead of placing usr/bin/box64 directly in the outer ZIP.
+        installBundledBox64Package(destination)
+    }
+
+    private fun installBundledBox64Package(destination: File) {
+        val expectedBox64 = File(destination, "usr/bin/box64")
+        if (expectedBox64.isFile) return
+
+        val packageDir = File(destination, "box64")
+        val ratPackage = packageDir.listFiles()
+            ?.firstOrNull { it.isFile && it.extension.equals("rat", ignoreCase = true) }
+            ?: return
+
+        val temporary = File(destination, ".box64-rat-extract")
+        temporary.deleteRecursively()
+        if (!temporary.mkdirs()) {
+            throw IOException("Cannot create temporary Box64 package directory")
+        }
+
+        try {
+            val ratZip = ZipFile(ratPackage)
+            if (!ratZip.isValidZipFile) {
+                throw IOException("Bundled Box64 .rat package is not a valid ZIP archive")
+            }
+            ratZip.extractAll(temporary.absolutePath)
+
+            val packageFiles = File(temporary, "files")
+            if (!packageFiles.isDirectory) {
+                throw IOException("Bundled Box64 package has no files/ directory")
+            }
+
+            packageFiles.copyRecursively(destination, overwrite = true)
+            if (!expectedBox64.isFile) {
+                throw IOException("Bundled Box64 package did not contain files/usr/bin/box64")
+            }
+
+            Os.chmod(expectedBox64.absolutePath, 448)
+            lastExtractionReport += "; installed Box64 from ${ratPackage.name}"
+        } finally {
+            temporary.deleteRecursively()
+        }
     }
 
     private fun extractTarXzArchive(source: File, destination: File) {
