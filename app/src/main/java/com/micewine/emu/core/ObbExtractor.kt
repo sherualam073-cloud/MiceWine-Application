@@ -84,7 +84,7 @@ object ObbExtractor {
                     while (entry != null) {
                         entryCount++
                         if (sampleEntries.size < 12) sampleEntries.add(entry.name)
-                        if (entry.name.replace('\\\\', '/').endsWith("usr/bin/box64")) {
+                        if (entry.name.replace('\\', '/').endsWith("usr/bin/box64")) {
                             box64Entry = "name=${entry.name}, file=${entry.isFile}, size=${entry.size}, type=${entry.linkFlag}"
                         }
                         if (entry.isFile) fileCount++
